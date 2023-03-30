@@ -28,10 +28,6 @@ namespace StarterAssets
         [Tooltip("Acceleration and deceleration")]
         public float SpeedChangeRate = 10.0f;
 
-        public AudioClip LandingAudioClip;
-        public AudioClip[] FootstepAudioClips;
-        [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
-
         [Space(10)]
         [Tooltip("The height the player can jump")]
         public float JumpHeight = 1.2f;
@@ -76,7 +72,10 @@ namespace StarterAssets
 
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
-
+        
+        [SerializeField] GameObject _humanoidGameObject;
+        [SerializeField] GameObject _batGameObject;
+ 
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -143,7 +142,7 @@ namespace StarterAssets
 #else
 			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
-
+            TransformInHuman();
             AssignAnimationIDs();
 
             // reset our timeouts on start
@@ -280,6 +279,7 @@ namespace StarterAssets
             }
             else
             {
+                ApplyBatTransformation();
                 ProccesFall();
             }
 
@@ -287,9 +287,30 @@ namespace StarterAssets
             ApplyGravity();
         }
 
+        private void ApplyBatTransformation()
+        {
+            if(_input.jump)
+            {
+                _input.jump = false;
+                TransformInBat();
+            }
+        }
+
+        private void TransformInBat()
+        {
+            _batGameObject.SetActive(true);
+            _humanoidGameObject.SetActive(false);
+        }
+
+        private void TransformInHuman()
+        {
+            _batGameObject.SetActive(false);
+            _humanoidGameObject.SetActive(true);
+        }
 
         private void ProccessGrounded()
         {
+            TransformInHuman();
             // reset the fall timeout timer
             _fallTimeoutDelta = FallTimeout;
 
@@ -309,6 +330,7 @@ namespace StarterAssets
             if (!_input.jump || _jumpTimeoutDelta > 0.0f)
                 return;
 
+            _input.jump = false;
             // the square root of H * -2 * G = how much velocity needed to reach desired height
             _verticalSpeed = Mathf.Sqrt(JumpHeight * -2f * Gravity);
             _animator?.SetBool(_animIDJump, true);
@@ -317,7 +339,6 @@ namespace StarterAssets
         private void ProccesFall()
         {
             _jumpTimeoutDelta = JumpTimeout;
-            _input.jump = false;
  
             _fallTimeoutDelta -= Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
             _animator?.SetBool(_animIDFreeFall, _fallTimeoutDelta < 0.0f);
@@ -361,24 +382,6 @@ namespace StarterAssets
                 GroundedRadius);
         }
 
-        private void OnFootstep(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f)
-            {
-                if (FootstepAudioClips.Length > 0)
-                {
-                    var index = Random.Range(0, FootstepAudioClips.Length);
-                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
-                }
-            }
-        }
-
-        private void OnLand(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f)
-            {
-                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
-            }
-        }
+        
     }
 }
