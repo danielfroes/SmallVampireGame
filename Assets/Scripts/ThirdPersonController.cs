@@ -110,6 +110,8 @@ namespace StarterAssets
 
         private const float _threshold = 0.01f;
 
+        private bool _isBat;
+
         private bool IsCurrentDeviceMouse
         {
             get
@@ -152,7 +154,6 @@ namespace StarterAssets
 
         private void Update()
         {   
-            UpdateGroundedCheck();
             ProcessVerticalSpeed();
             ProcessHorizontalSpeed();
             ProcessRotation();
@@ -235,12 +236,12 @@ namespace StarterAssets
         }
 
         private void UpdateGroundedCheck()
-        {
+        {   
             // set sphere position, with offset
             Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
                 transform.position.z);
             Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
-                QueryTriggerInteraction.Ignore);
+                QueryTriggerInteraction.Ignore) && _verticalSpeed <= 0;
 
             // update animator if using character
             _animator?.SetBool(_animIDGrounded, Grounded);
@@ -293,6 +294,7 @@ namespace StarterAssets
             {
                 _input.jump = false;
                 TransformInBat();
+                Jump();
             }
         }
 
@@ -300,12 +302,14 @@ namespace StarterAssets
         {
             _batGameObject.SetActive(true);
             _humanoidGameObject.SetActive(false);
+            _isBat = true;
         }
 
         private void TransformInHuman()
         {
             _batGameObject.SetActive(false);
             _humanoidGameObject.SetActive(true);
+            _isBat = false;
         }
 
         private void ProccessGrounded()
@@ -318,7 +322,7 @@ namespace StarterAssets
             _animator?.SetBool(_animIDJump, false);
             _animator?.SetBool(_animIDFreeFall, false);
 
-            // stop our velocity dropping infinitely when grounded
+            // stop our velocity dropping infinitely when grounded         
             _verticalSpeed = Mathf.Max(0.0f, _verticalSpeed - 2f);
 
             // jump timeout
@@ -331,6 +335,11 @@ namespace StarterAssets
                 return;
 
             _input.jump = false;
+            Jump();
+        }
+
+        private void Jump()
+        {
             // the square root of H * -2 * G = how much velocity needed to reach desired height
             _verticalSpeed = Mathf.Sqrt(JumpHeight * -2f * Gravity);
             _animator?.SetBool(_animIDJump, true);
