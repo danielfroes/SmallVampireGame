@@ -2,6 +2,7 @@
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 #endif
 
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
@@ -44,9 +45,10 @@ namespace StarterAssets
         [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
         public float JumpTimeout = 0.50f;
         
-
         [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
         public float FallTimeout = 0.15f;
+
+        public float BatTimeout = 5f;
 
         [Header("Player Grounded")]
         [Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
@@ -81,6 +83,7 @@ namespace StarterAssets
         
         [SerializeField] GameObject _humanoidGameObject;
         [SerializeField] GameObject _batGameObject;
+        [SerializeField] Image _staminaBar;
  
         // cinemachine
         private float _cinemachineTargetYaw;
@@ -98,6 +101,7 @@ namespace StarterAssets
         // timeout deltatime
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
+        private float _batTimeoutDelta;
 
         // animation IDs
         private int _animIDSpeed;
@@ -118,7 +122,6 @@ namespace StarterAssets
 
         private bool _isBat;
    
-        private bool _isFlying;
 
         private bool IsCurrentDeviceMouse
         {
@@ -158,6 +161,7 @@ namespace StarterAssets
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
+            _batTimeoutDelta = BatTimeout;
         }
 
         private void Update()
@@ -171,6 +175,30 @@ namespace StarterAssets
         private void LateUpdate()
         {
             CameraRotation();
+        }
+
+        private void ProcessVerticalSpeed()
+        {
+            UpdateGroundedCheck();
+
+            if (Grounded)
+            {
+                ProccessGrounded();
+            }
+            else
+            {
+                ProccesFall();
+            }
+
+            if (_isBat)
+            {
+                Glide();
+            }
+            else
+            {
+                ApplyGravity();
+            }
+
         }
 
         private void ProcessHorizontalSpeed()
@@ -277,46 +305,45 @@ namespace StarterAssets
                 _cinemachineTargetYaw, 0.0f);
         }
 
-        private void ProcessVerticalSpeed()
+      
+        private void Glide()
         {
-            UpdateGroundedCheck();
+            ProcessBatTimer();
 
-            if (Grounded)
-            {
-                ProccessGrounded();
-            }
-            else
-            {
-                ProccesFall();
-            }
+            _verticalSpeed = _input.flying ? BatFlyingSpeed : _verticalSpeed;
 
-            if(_isBat)
-            {
-                Fly();
-            }
-            else
-            {
-                ApplyGravity();
-            }
-            
+            _verticalSpeed = Math.Max(BatGlidingSpeed, _verticalSpeed + Gravity * Time.deltaTime);
         }
 
-        private void Fly()
+        private void ProcessBatTimer()
         {
-            _verticalSpeed = _isFlying? BatFlyingSpeed : BatGlidingSpeed;
-            _isFlying = false;
-        }   
+            _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - Time.deltaTime);
+
+            Debug.Log($"Lerp: {Mathf.InverseLerp(0.0f, BatTimeout, _batTimeoutDelta)}; batTimeoutDelta: {_batTimeoutDelta}");
+
+
+            _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTimeout, _batTimeoutDelta);  
+            if( _batTimeoutDelta <= 0.0f )
+            {
+                TransformInHuman();
+            }
+        }
 
         private void TransformInBat()
         {
+            if (_batTimeoutDelta <= 0.0f)
+                return;
+
+            _staminaBar.gameObject.SetActive(true);
             _batGameObject.SetActive(true);
             _humanoidGameObject.SetActive(false);
             _isBat = true;
-            //_verticalSpeed = Mathf.Sqrt(TransformationJumpHeight * -2f * Gravity);
+            _verticalSpeed = Mathf.Sqrt(TransformationJumpHeight * -2f * Gravity);
         }
 
         private void TransformInHuman()
         {
+            _staminaBar.gameObject.SetActive(false);
             _batGameObject.SetActive(false);
             _humanoidGameObject.SetActive(true);
             _isBat = false;
@@ -325,8 +352,10 @@ namespace StarterAssets
         private void ProccessGrounded()
         {
             TransformInHuman();
+
             // reset the fall timeout timer
             _fallTimeoutDelta = FallTimeout;
+            _batTimeoutDelta = BatTimeout;
 
             // update animator if using character
             _animator?.SetBool(_animIDJump, false);
@@ -349,17 +378,17 @@ namespace StarterAssets
             else if(!Grounded && !_isBat)
             {
                 TransformInBat();
+
             }
-            else if(!Grounded && _isBat)
-            {
-                ActivateFlying();
-            }
-            
+
         }
 
-        private void ActivateFlying()
+        private void Fly()
         {
-            _isFlying = true;
+            
+            // the square root of H * -2 * G = how much velocity needed to reach desired height
+            _verticalSpeed = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+            _animator?.SetBool(_animIDJump, true);
         }
 
         private void Jump()
@@ -381,10 +410,6 @@ namespace StarterAssets
 
         private void ApplyGravity()
         {
-            if(_isBat)
-            {
-                return;   
-            }
             // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
             if(_verticalSpeed < _terminalVerticalSpeed)
             {
