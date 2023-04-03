@@ -278,7 +278,7 @@ namespace StarterAssets
                 transform.position.z);
             Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
                 QueryTriggerInteraction.Ignore) && _verticalSpeed <= 0;
-
+            
             // update animator if using character
             _animator?.SetBool(_animIDGrounded, Grounded);
         }
@@ -317,8 +317,8 @@ namespace StarterAssets
             {
                 _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - Time.deltaTime);
             }
-           
 
+   
             ProcessBatTimer();
             _verticalSpeed = Math.Max(BatGlidingSpeed, _verticalSpeed + Gravity * Time.deltaTime);
         }
@@ -341,7 +341,6 @@ namespace StarterAssets
             _batGameObject.SetActive(true);
             _humanoidGameObject.SetActive(false);
             _isBat = true;
-            _verticalSpeed = Mathf.Sqrt(TransformationJumpHeight * -2f * Gravity);
         }
 
         private void TransformInHuman()
@@ -396,8 +395,8 @@ namespace StarterAssets
         private void ProccesFall()
         {
             _jumpTimeoutDelta = JumpTimeout;
- 
-            _fallTimeoutDelta -= Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
+    
+            _fallTimeoutDelta = Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
             _animator?.SetBool(_animIDFreeFall, _fallTimeoutDelta <= 0.0f);
         }
 
