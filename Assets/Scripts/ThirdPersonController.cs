@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
 #endif
@@ -31,13 +32,18 @@ namespace StarterAssets
         [Space(10)]
         [Tooltip("The height the player can jump")]
         public float JumpHeight = 1.2f;
+        [Tooltip("The height the player can jump")]
+        public float TransformationJumpHeight = 1.2f;
 
         [Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
         public float Gravity = -15.0f;
+        public float BatGlidingSpeed = -0.5f;
+        public float BatFlyingSpeed = 1;
 
         [Space(10)]
         [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
         public float JumpTimeout = 0.50f;
+        
 
         [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
         public float FallTimeout = 0.15f;
@@ -111,6 +117,8 @@ namespace StarterAssets
         private const float _threshold = 0.01f;
 
         private bool _isBat;
+   
+        private bool _isFlying;
 
         private bool IsCurrentDeviceMouse
         {
@@ -146,7 +154,7 @@ namespace StarterAssets
 #endif
             TransformInHuman();
             AssignAnimationIDs();
-
+            _input.OnJumpPressed += ProccesJumpInput;
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
@@ -276,33 +284,35 @@ namespace StarterAssets
             if (Grounded)
             {
                 ProccessGrounded();
-                ApplyJump();
             }
             else
             {
-                ApplyBatTransformation();
                 ProccesFall();
             }
 
+            if(_isBat)
+            {
+                Fly();
+            }
+            else
+            {
+                ApplyGravity();
+            }
             
-            ApplyGravity();
         }
 
-        private void ApplyBatTransformation()
+        private void Fly()
         {
-            if(_input.jump)
-            {
-                _input.jump = false;
-                TransformInBat();
-                Jump();
-            }
-        }
+            _verticalSpeed = _isFlying? BatFlyingSpeed : BatGlidingSpeed;
+            _isFlying = false;
+        }   
 
         private void TransformInBat()
         {
             _batGameObject.SetActive(true);
             _humanoidGameObject.SetActive(false);
             _isBat = true;
+            //_verticalSpeed = Mathf.Sqrt(TransformationJumpHeight * -2f * Gravity);
         }
 
         private void TransformInHuman()
@@ -329,17 +339,33 @@ namespace StarterAssets
             _jumpTimeoutDelta = Mathf.Max(0.0f, _jumpTimeoutDelta - Time.deltaTime);
         }
 
-        private void ApplyJump()
-        {
-            if (!_input.jump || _jumpTimeoutDelta > 0.0f)
-                return;
 
-            _input.jump = false;
-            Jump();
+        void ProccesJumpInput()
+        {
+            if(Grounded && !_isBat)
+            {
+                Jump();
+            }
+            else if(!Grounded && !_isBat)
+            {
+                TransformInBat();
+            }
+            else if(!Grounded && _isBat)
+            {
+                ActivateFlying();
+            }
+            
+        }
+
+        private void ActivateFlying()
+        {
+            _isFlying = true;
         }
 
         private void Jump()
         {
+            if (_jumpTimeoutDelta > 0.0f)
+                return;
             // the square root of H * -2 * G = how much velocity needed to reach desired height
             _verticalSpeed = Mathf.Sqrt(JumpHeight * -2f * Gravity);
             _animator?.SetBool(_animIDJump, true);
@@ -355,10 +381,14 @@ namespace StarterAssets
 
         private void ApplyGravity()
         {
+            if(_isBat)
+            {
+                return;   
+            }
             // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
             if(_verticalSpeed < _terminalVerticalSpeed)
             {
-                _verticalSpeed += Gravity * Time.deltaTime;
+                _verticalSpeed +=  Gravity * Time.deltaTime;
             }
         }
 
@@ -393,4 +423,6 @@ namespace StarterAssets
 
         
     }
+
+
 }
