@@ -121,7 +121,7 @@ namespace StarterAssets
         private const float _threshold = 0.01f;
 
         private bool _isBat;
-   
+        [SerializeField] private float _flyingStaminaMultiplier;
 
         private bool IsCurrentDeviceMouse
         {
@@ -193,12 +193,12 @@ namespace StarterAssets
             if (_isBat)
             {
                 Glide();
+                ProcessBatTimer();
             }
             else
             {
                 ApplyGravity();
             }
-
         }
 
         private void ProcessHorizontalSpeed()
@@ -308,20 +308,23 @@ namespace StarterAssets
       
         private void Glide()
         {
+            if(_input.flying)
+            {
+                _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - _flyingStaminaMultiplier * Time.deltaTime);
+                _verticalSpeed = BatFlyingSpeed;
+            }
+            else
+            {
+                _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - Time.deltaTime);
+            }
+           
+
             ProcessBatTimer();
-
-            _verticalSpeed = _input.flying ? BatFlyingSpeed : _verticalSpeed;
-
             _verticalSpeed = Math.Max(BatGlidingSpeed, _verticalSpeed + Gravity * Time.deltaTime);
         }
 
         private void ProcessBatTimer()
         {
-            _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - Time.deltaTime);
-
-            Debug.Log($"Lerp: {Mathf.InverseLerp(0.0f, BatTimeout, _batTimeoutDelta)}; batTimeoutDelta: {_batTimeoutDelta}");
-
-
             _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTimeout, _batTimeoutDelta);  
             if( _batTimeoutDelta <= 0.0f )
             {
@@ -378,17 +381,7 @@ namespace StarterAssets
             else if(!Grounded && !_isBat)
             {
                 TransformInBat();
-
             }
-
-        }
-
-        private void Fly()
-        {
-            
-            // the square root of H * -2 * G = how much velocity needed to reach desired height
-            _verticalSpeed = Mathf.Sqrt(JumpHeight * -2f * Gravity);
-            _animator?.SetBool(_animIDJump, true);
         }
 
         private void Jump()
@@ -405,7 +398,7 @@ namespace StarterAssets
             _jumpTimeoutDelta = JumpTimeout;
  
             _fallTimeoutDelta -= Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
-            _animator?.SetBool(_animIDFreeFall, _fallTimeoutDelta < 0.0f);
+            _animator?.SetBool(_animIDFreeFall, _fallTimeoutDelta <= 0.0f);
         }
 
         private void ApplyGravity()
