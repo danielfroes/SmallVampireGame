@@ -47,8 +47,8 @@ namespace StarterAssets
         
         [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
         public float FallTimeout = 0.15f;
-
         public float BatTimeout = 5f;
+        public float TransformBackTimeout = 0.3f;
 
         [Header("Player Grounded")]
         [Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
@@ -101,7 +101,9 @@ namespace StarterAssets
         // timeout deltatime
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
-        private float _batTimeoutDelta;
+        private float _batTimerDelta;
+        private float _transformTimeoutDelta;
+
 
         // animation IDs
         private int _animIDSpeed;
@@ -158,10 +160,12 @@ namespace StarterAssets
             TransformInHuman();
             AssignAnimationIDs();
             _input.OnJumpPressed += ProccesJumpInput;
+            _input.OnTransformBackCallback += TransformBack;
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
-            _batTimeoutDelta = BatTimeout;
+            _batTimerDelta = BatTimeout;
+            _transformTimeoutDelta = TransformBackTimeout;
         }
 
         private void Update()
@@ -192,13 +196,34 @@ namespace StarterAssets
 
             if (_isBat)
             {
-                Glide();
+                ApplyBatFlying();
                 ProcessBatTimer();
             }
             else
             {
                 ApplyGravity();
             }
+        }
+
+
+        void ProccesJumpInput()
+        {
+            if (Grounded && !_isBat)
+            {
+                Jump();
+            }
+            else if (!Grounded && !_isBat)
+            {
+                TransformInBat();
+            }
+        }
+
+        private void TransformBack()
+        {
+            if (!_isBat || _transformTimeoutDelta > 0)
+                return;
+
+            TransformInHuman();
         }
 
         private void ProcessHorizontalSpeed()
@@ -262,27 +287,6 @@ namespace StarterAssets
             }
         }
 
-        private void AssignAnimationIDs()
-        {
-            _animIDSpeed = Animator.StringToHash("Speed");
-            _animIDGrounded = Animator.StringToHash("Grounded");
-            _animIDJump = Animator.StringToHash("Jump");
-            _animIDFreeFall = Animator.StringToHash("FreeFall");
-            _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
-        }
-
-        private void UpdateGroundedCheck()
-        {   
-            // set sphere position, with offset
-            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
-                transform.position.z);
-            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
-                QueryTriggerInteraction.Ignore) && _verticalSpeed <= 0;
-
-            // update animator if using character
-            _animator?.SetBool(_animIDGrounded, Grounded);
-        }
-
         private void CameraRotation()
         {
             // if there is an input and camera position is not fixed
@@ -306,27 +310,26 @@ namespace StarterAssets
         }
 
       
-        private void Glide()
+        private void ApplyBatFlying()
         {
             if(_input.flying)
             {
-                _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - _flyingStaminaMultiplier * Time.deltaTime);
+                _batTimerDelta = Mathf.Max(0.0f, _batTimerDelta - _flyingStaminaMultiplier * Time.deltaTime);
                 _verticalSpeed = BatFlyingSpeed;
             }
             else
             {
-                _batTimeoutDelta = Mathf.Max(0.0f, _batTimeoutDelta - Time.deltaTime);
+                _batTimerDelta = Mathf.Max(0.0f, _batTimerDelta - Time.deltaTime);
             }
            
-
-            ProcessBatTimer();
             _verticalSpeed = Math.Max(BatGlidingSpeed, _verticalSpeed + Gravity * Time.deltaTime);
         }
 
         private void ProcessBatTimer()
         {
-            _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTimeout, _batTimeoutDelta);  
-            if( _batTimeoutDelta <= 0.0f )
+            _transformTimeoutDelta = Mathf.Max(0.0f, _transformTimeoutDelta - Time.deltaTime);
+            _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTimeout, _batTimerDelta);  
+            if( _batTimerDelta <= 0.0f )
             {
                 TransformInHuman();
             }
@@ -334,9 +337,10 @@ namespace StarterAssets
 
         private void TransformInBat()
         {
-            if (_batTimeoutDelta <= 0.0f)
+            if (_batTimerDelta <= 0.0f)
                 return;
 
+            _transformTimeoutDelta = TransformBackTimeout;
             _staminaBar.gameObject.SetActive(true);
             _batGameObject.SetActive(true);
             _humanoidGameObject.SetActive(false);
@@ -358,7 +362,7 @@ namespace StarterAssets
 
             // reset the fall timeout timer
             _fallTimeoutDelta = FallTimeout;
-            _batTimeoutDelta = BatTimeout;
+            _batTimerDelta = BatTimeout;
 
             // update animator if using character
             _animator?.SetBool(_animIDJump, false);
@@ -369,19 +373,6 @@ namespace StarterAssets
 
             // jump timeout
             _jumpTimeoutDelta = Mathf.Max(0.0f, _jumpTimeoutDelta - Time.deltaTime);
-        }
-
-
-        void ProccesJumpInput()
-        {
-            if(Grounded && !_isBat)
-            {
-                Jump();
-            }
-            else if(!Grounded && !_isBat)
-            {
-                TransformInBat();
-            }
         }
 
         private void Jump()
@@ -397,7 +388,7 @@ namespace StarterAssets
         {
             _jumpTimeoutDelta = JumpTimeout;
  
-            _fallTimeoutDelta -= Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
+            _fallTimeoutDelta = Mathf.Max(0.0f, _fallTimeoutDelta - Time.deltaTime);
             _animator?.SetBool(_animIDFreeFall, _fallTimeoutDelta <= 0.0f);
         }
 
@@ -423,6 +414,27 @@ namespace StarterAssets
             if (lfAngle < -360f) lfAngle += 360f;
             if (lfAngle > 360f) lfAngle -= 360f;
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        }
+
+        private void AssignAnimationIDs()
+        {
+            _animIDSpeed = Animator.StringToHash("Speed");
+            _animIDGrounded = Animator.StringToHash("Grounded");
+            _animIDJump = Animator.StringToHash("Jump");
+            _animIDFreeFall = Animator.StringToHash("FreeFall");
+            _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+        }
+
+        private void UpdateGroundedCheck()
+        {
+            // set sphere position, with offset
+            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
+                transform.position.z);
+            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
+                QueryTriggerInteraction.Ignore) && _verticalSpeed <= 0;
+
+            // update animator if using character
+            _animator?.SetBool(_animIDGrounded, Grounded);
         }
 
         private void OnDrawGizmosSelected()

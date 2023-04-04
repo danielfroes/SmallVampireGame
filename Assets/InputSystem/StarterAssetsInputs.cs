@@ -12,7 +12,7 @@ namespace StarterAssets
 		public Vector2 move;
 		public Vector2 look;
 		public bool jump;
-		public bool sprint;
+		public bool sprint = true;
         public bool flying;
 
 
@@ -22,6 +22,8 @@ namespace StarterAssets
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
+
+		public event Action OnTransformBackCallback;
 
         public event Action OnJumpPressed;
 
@@ -55,6 +57,10 @@ namespace StarterAssets
 			FlyingInput(value.isPressed);
         }
 
+		public void OnTransformBack()
+		{
+			OnTransformBackCallback?.Invoke();
+		}
 #endif
 
 
@@ -80,7 +86,7 @@ namespace StarterAssets
 
         public void SprintInput(bool newSprintState)
 		{
-			sprint = newSprintState;
+			sprint = true;
 		}
 
 		private void OnApplicationFocus(bool hasFocus)
