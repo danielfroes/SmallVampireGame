@@ -44,7 +44,6 @@ namespace StarterAssets
 		public void OnJump(InputValue value)
 		{
 			OnJumpPressed?.Invoke();
-			//JumpInput(value.isPressed);
 		}
 
 		public void OnSprint(InputValue value)
@@ -71,7 +70,7 @@ namespace StarterAssets
 
 		public void LookInput(Vector2 newLookDirection)
 		{
-			look = newLookDirection;
+			//look = newLookDirection;
 		}
 
 		public void JumpInput(bool newJumpState)
