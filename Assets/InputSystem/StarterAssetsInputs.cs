@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-namespace StarterAssets
+namespace Assets.Scripts.InputSystem
 {
 	public class StarterAssetsInputs : MonoBehaviour
 	{

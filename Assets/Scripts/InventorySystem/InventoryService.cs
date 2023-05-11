@@ -8,7 +8,18 @@ namespace Assets.Scripts.InventorySystem
         
         public void AddCoin(int amount)
         {
+            if (amount < 0)
+                return;
+
             Coins += amount;
+        }
+
+        public void RemoveCoins(int coins)
+        {
+            if (coins < 0)
+                return;
+
+            Coins -= coins;
         }
     }
 }

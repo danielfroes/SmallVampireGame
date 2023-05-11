@@ -10,5 +10,12 @@ namespace Assets.Scripts.Utils
         {
             return gameObject.CompareTag(PLAYER_TAG);
         }
+
+        public static bool IsPlayer(this Collider collider)
+        {
+            return collider.CompareTag(PLAYER_TAG);
+        }
     }
+
+
 }
