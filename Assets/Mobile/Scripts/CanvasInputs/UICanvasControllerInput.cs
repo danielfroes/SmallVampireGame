@@ -1,3 +1,4 @@
+using Assets.Scripts.InputSystem;
 using UnityEngine;
 
 namespace StarterAssets
