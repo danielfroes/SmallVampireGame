@@ -1,8 +1,10 @@
 ﻿using Assets.Scripts.Interactable;
 using Assets.Scripts.QuestSystem;
 using Assets.Scripts.Utils;
+using Cysharp.Threading.Tasks;
 using System;
 using UnityEngine;
+using Yarn.Unity;
 
 namespace Assets.Scripts.Mock
 {
@@ -10,30 +12,45 @@ namespace Assets.Scripts.Mock
     {
         [SerializeField] AInteractable _interactable;
         [SerializeField] QuestData _questData;
+        [SerializeField] DialogueRunner _dialogueRunner;
 
         public void Start()
         {
-            _interactable.OnInteract += CheckQuest;
+            _interactable.OnInteract += () => CheckQuest().Forget();
         }
 
-        void CheckQuest()
+        async UniTaskVoid CheckQuest()
         {
+            if (_dialogueRunner.IsDialogueRunning)
+                return;
 
-            if(_questData.Quest.IsCompleted)
+            await UniTask.NextFrame();
+
+            _dialogueRunner.StartDialogue("Teste");
+
+            await UniTask.WaitUntil(() => !_dialogueRunner.IsDialogueRunning);
+
+            if (_questData.Quest.IsCompleted)
             {
-                Debug.Log("Quest ja completada");
+                _dialogueRunner.StartDialogue("QuestWasCompleted");
                 return;
             }
 
-            if(_questData.Quest.CanBeCompleted())
+            if (_questData.Quest.CanBeCompleted())
             {
+                _dialogueRunner.StartDialogue("QuestCanBeCompleted");
                 _questData.Quest.Complete();
-                Debug.Log("Deu certo");
             }
             else
             {
-                Debug.Log("Quest nao completa");
+                _dialogueRunner.StartDialogue("QuestCantBeCompleted");
             }
+        }
+
+        [YarnCommand("completeQuest")]
+        public void CompleteQuest()
+        {
+            _questData.Quest.Complete();
         }
     }
 }

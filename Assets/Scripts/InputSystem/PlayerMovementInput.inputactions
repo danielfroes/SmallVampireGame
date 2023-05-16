@@ -1,5 +1,5 @@
 {
-    "name": "StarterAssets",
+    "name": "PlayerMovementInput",
     "maps": [
         {
             "name": "Player",

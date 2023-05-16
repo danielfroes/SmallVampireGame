@@ -1,0 +1,35 @@
+﻿title: Teste
+tags:
+position: -116,7
+---
+
+<<if visited("Teste") is false>>
+    NPC: Hello, so you are the new blood. Is a pleasure to meet you.
+<<else>>
+    NPC: Hello again, new Blood. How are you doing?
+<<endif>>
+===
+
+
+title: QuestWasCompleted
+tags:
+position: 171,145
+---
+
+NPC: Thank you for your help. I hope you can help me again in the future.
+===
+
+title: QuestCantBeCompleted
+tags:
+---
+NPC: So you were able to find the coins?
+NPC: Naah, You are lacking coins. Come back when you have them 5 of them.
+===
+
+title: QuestCanBeCompleted
+---
+<<completeQuest>>
+NPC: So you were able to find the coins?
+NPC: Great, here is your reward.
+===
+
