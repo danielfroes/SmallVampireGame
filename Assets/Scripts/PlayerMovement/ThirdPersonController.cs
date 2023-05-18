@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.InputSystem;
+using Assets.Scripts.Utils;
 using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
@@ -48,7 +49,6 @@ namespace StarterAssets
         
         [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
         public float FallTimeout = 0.15f;
-        public float BatTimeout = 5f;
         public float TransformBackTimeout = 0.3f;
 
         [Header("Player Grounded")]
@@ -105,7 +105,6 @@ namespace StarterAssets
         private float _batTimerDelta;
         private float _transformTimeoutDelta;
 
-
         // animation IDs
         private int _animIDSpeed;
         private int _animIDGrounded;
@@ -115,6 +114,7 @@ namespace StarterAssets
 
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
         private PlayerInput _playerInput;
+        private PlayerStatsService _playerService;
 #endif
         [SerializeField] private Animator _animator;
         private CharacterController _controller;
@@ -125,6 +125,8 @@ namespace StarterAssets
 
         private bool _isBat;
         [SerializeField] private float _flyingStaminaMultiplier;
+
+        float BatTime => _playerService?.BatTime ?? 0f;
 
         private bool IsCurrentDeviceMouse
         {
@@ -157,7 +159,8 @@ namespace StarterAssets
             _playerInput = GetComponent<PlayerInput>();
 #else
 			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
-#endif
+#endif      
+            _playerService = ServiceLocator.Get<PlayerStatsService>();
             TransformInHuman();
             AssignAnimationIDs();
             _input.OnJumpPressed += ProccesJumpInput;
@@ -165,7 +168,7 @@ namespace StarterAssets
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
-            _batTimerDelta = BatTimeout;
+            _batTimerDelta = _playerService.BatTime;
             _transformTimeoutDelta = TransformBackTimeout;
         }
 
@@ -329,7 +332,7 @@ namespace StarterAssets
         private void ProcessBatTimer()
         {
             _transformTimeoutDelta = Mathf.Max(0.0f, _transformTimeoutDelta - Time.deltaTime);
-            _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTimeout, _batTimerDelta);  
+            _staminaBar.fillAmount = Mathf.InverseLerp(0.0f, BatTime, _batTimerDelta);  
             if( _batTimerDelta <= 0.0f )
             {
                 TransformInHuman();
@@ -363,7 +366,7 @@ namespace StarterAssets
 
             // reset the fall timeout timer
             _fallTimeoutDelta = FallTimeout;
-            _batTimerDelta = BatTimeout;
+            _batTimerDelta = BatTime;
 
             // update animator if using character
             _animator?.SetBool(_animIDJump, false);
@@ -451,9 +454,22 @@ namespace StarterAssets
                 new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
                 GroundedRadius);
         }
-
-        
     }
 
+
+    public class PlayerStatsService
+    {
+        public float BatTime { get; private set; }
+
+        public PlayerStatsService()
+        {
+            BatTime = 2f;
+        }
+
+        public void IncreaseBatTime()
+        {
+            BatTime = 4f;
+        }
+    }
 
 }

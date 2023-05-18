@@ -1,6 +1,7 @@
 ﻿using Assets.Game.Scripts.Utils;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Utils;
+using StarterAssets;
 using UnityEngine;
 
 namespace Assets.Scripts.QuestSystem
@@ -32,6 +33,7 @@ namespace Assets.Scripts.QuestSystem
         public void Complete()
         {
             ServiceLocator.Get<InventoryService>().RemoveCoins(_coinsToCollect);
+            ServiceLocator.Get<PlayerStatsService>().IncreaseBatTime();
             IsCompleted = true;
         }
     }
