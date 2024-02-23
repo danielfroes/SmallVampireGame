@@ -2,11 +2,33 @@
 tags:
 position: -116,7
 ---
+>>
+
 
 <<if visited("Teste") is false>>
     NPC: Hello, so you are the new blood. Is a pleasure to meet you.
+    <<if canCompleteQuest("NPC") is false>>
+        NPC: Can you help me find my coins? ... I lost them somewhere in the city.
+        NPC: Come back here when you find 4 of them at least. And i will make you fly higher.
+    <<else>>
+        NPC: Can you help me find my coins? ... I lost them somewhere in the city.
+        NPC: Wait, you already have them? Give them to me and i will make you fly higher.
+    <<endif>>
 <<else>>
     NPC: Hello again, new Blood. How are you doing?
+    <<if questIsCompleted("NPC")>>
+        NPC: Thank you for your help. I hope you can help me again in the future.
+    <<elseif canCompleteQuest("NPC") is false>>
+        NPC: So you were able to find the coins?
+        NPC: Naah, You are lacking coins. Come back when you have 4 of them.   
+    <<else>>
+        NPC: So you were able to find the coins?
+        NPC: Great, here is your reward.
+    <<endif>>
+<<endif>>
+
+<<if canCompleteQuest("NPC")>>
+    <<completeQuest NPC>>
 <<endif>>
 ===
 
@@ -16,20 +38,33 @@ tags:
 position: 171,145
 ---
 
-NPC: Thank you for your help. I hope you can help me again in the future.
+
 ===
 
 title: QuestCantBeCompleted
 tags:
 ---
-NPC: So you were able to find the coins?
-NPC: Naah, You are lacking coins. Come back when you have them 5 of them.
+<<if visited("Teste") is false>>
+    NPC: Can you help me find my coins? ... I lost them somewhere in the city.
+    NPC: Come back here when you find 4 of them at least. And i will make you fly higher.
+<<else>>
+    NPC: So you were able to find the coins?
+    NPC: Naah, You are lacking coins. Come back when you have 4 of them.
+<<endif>>
 ===
 
 title: QuestCanBeCompleted
+position: 23,-177
 ---
-NPC: So you were able to find the coins?
-NPC: Great, here is your reward.
+
+<<if visited("Teste") is false>>
+    NPC: Can you help me find my coins? ... I lost them somewhere in the city.
+    NPC: Wait, you already have them? Give them to me and i will make you fly higher.
+<<else>>
+    NPC: So you were able to find the coins?
+    NPC: Great, here is your reward.
+<<endif>>
+
 <<completeQuest>>
 ===
 

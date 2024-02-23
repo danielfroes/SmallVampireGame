@@ -29,22 +29,6 @@ namespace Assets.Scripts.Mock
             _dialogueRunner.StartDialogue("Teste");
 
             await UniTask.WaitUntil(() => !_dialogueRunner.IsDialogueRunning);
-
-            if (_questData.Quest.IsCompleted)
-            {
-                _dialogueRunner.StartDialogue("QuestWasCompleted");
-                return;
-            }
-
-            if (_questData.Quest.CanBeCompleted())
-            {
-                _dialogueRunner.StartDialogue("QuestCanBeCompleted");
-                _questData.Quest.Complete();
-            }
-            else
-            {
-                _dialogueRunner.StartDialogue("QuestCantBeCompleted");
-            }
         }
 
         [YarnCommand("completeQuest")]
@@ -52,5 +36,18 @@ namespace Assets.Scripts.Mock
         {
             _questData.Quest.Complete();
         }
+
+        [YarnFunction("isQuestCompleted")]
+        public static bool IsQuestComplete()
+        {
+            return _questData.Quest.IsCompleted;
+        }
+
+        [YarnFunction("canCompleteQuest")]
+        public static bool CanCompleteQuest()
+        {
+            return _questData.Quest.CanBeCompleted();
+        }
+
     }
 }

@@ -29,7 +29,6 @@ namespace Assets.Scripts.QuestSystem
         {
             return ServiceLocator.Get<InventoryService>().Coins >= _coinsToCollect;
         }
-
         public void Complete()
         {
             ServiceLocator.Get<InventoryService>().RemoveCoins(_coinsToCollect);
